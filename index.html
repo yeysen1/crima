@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Arrow Control</title>
+<style>
+    body {
+        margin: 0;
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+    }
+
+    .container {
+        position: relative;
+        width: 200px;
+        height: 200px;
+    }
+
+    .arrow-button {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        text-align: center;
+        line-height: 50px;
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    /* Positioning */
+    .arrow-up {
+        left: 50%;
+        transform: translateX(-50%);
+        top: 0;
+    }
+
+    .arrow-down {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 0;
+    }
+
+    .arrow-left {
+        top: 50%;
+        transform: translateY(-50%);
+        left: 0;
+    }
+
+    .arrow-right {
+        top: 50%;
+        transform: translateY(-50%);
+        right: 0;
+    }
+
+    .arrow-button:hover {
+        background-color: #e0e0e0;
+    }
+
+    .status {
+        position: absolute;
+        top: calc(50% - 8px);
+        left: calc(50% - 8px);
+        transform: translate(-50%, -50%);
+        font-size: 12px;
+        color: #555;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="arrow-button arrow-up" data-direction="up">↑</div>
+    <div class="arrow-button arrow-down" data-direction="down">↓</div>
+    <div class="arrow-button arrow-left" data-direction="left">←</div>
+    <div class="arrow-button arrow-right" data-direction="right">→</div>
+    <div class="status">Ready</div>
+</div>
+
+<script>
+    const buttons = document.querySelectorAll('.arrow-button');
+    const statusDiv = document.querySelector('.status');
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const direction = btn.getAttribute('data-direction');
+            updateState(direction);
+        });
+    });
+
+    async function updateState(direction) {
+        statusDiv.textContent = 'Updating...';
+        try {
+            const response = await fetch('/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction })
+            });
+            const result = await response.json();
+            // result might contain the updated JSON state
+            statusDiv.textContent = `Updated: ${direction} set to true`;
+        } catch (err) {
+            console.error(err);
+            statusDiv.textContent = 'Error updating state';
+        }
+    }
+</script>
+
+</body>
+</html>

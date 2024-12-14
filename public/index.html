@@ -7,6 +7,7 @@
   body {
     margin: 0;
     font-family: sans-serif;
+    /* Local PNG background (place 'background.png' in the same 'public' folder) */
     background: url('slh.png') no-repeat center center;
     background-size: cover;
 
@@ -20,6 +21,13 @@
 
   .header {
     margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px #000;
+  }
+
+  .header2 {
+    margin-top: 10px;
     font-size: 24px;
     font-weight: bold;
     text-shadow: 1px 1px 3px #000;
@@ -44,10 +52,7 @@
     border: 1px solid #ccc;
     border-radius: 5px;
     cursor: pointer;
-  }
-
-  .arrow-button:hover {
-    background-color: #ddd;
+    transition: background-color 0.2s ease;
   }
 
   .arrow-up {
@@ -55,26 +60,29 @@
     left: 50%;
     transform: translateX(-50%);
   }
-
   .arrow-down {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
   }
-
   .arrow-left {
     left: 0;
     top: 50%;
     transform: translateY(-50%);
   }
-
   .arrow-right {
     right: 0;
     top: 50%;
     transform: translateY(-50%);
   }
 
-  /* Fire button in the center of the container */
+  /* "active" class will change button color to green */
+  .arrow-button.active {
+    background-color: #4CAF50; /* green */
+    color: #fff;
+  }
+
+  /* Fire button in the center */
   .fire-button {
     position: absolute;
     width: 80px;
@@ -87,24 +95,16 @@
     border: 2px solid #fff;
     border-radius: 5px;
     cursor: pointer;
-
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    transition: background-color 0.2s ease;
   }
-
   .fire-button:hover {
     background-color: #f33;
   }
-
-  .status {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 1px 1px 3px #000;
+  .fire-button.active {
+    background-color: #FF4500; /* orangered when active */
   }
 
   .slider-container {
@@ -114,7 +114,7 @@
     height: 100px;
   }
 
-  /* First slider: half-circle (0–90) horizontally */
+  /* Half-circle slider - improved style */
   .half-circle-slider {
     width: 100%;
     margin: 0;
@@ -137,16 +137,18 @@
     border-radius: 50%;
     cursor: pointer;
   }
+  /* Gradient track for half-circle slider */
   .half-circle-slider::-webkit-slider-runnable-track {
-    height: 5px;
-    background: rgba(255,255,255,0.8);
-    border-radius: 5px;
+    height: 8px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #4CAF50 0%, #2196F3 100%);
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
   }
 
-  /* Second slider: vertical on the side */
+  /* Second slider (vertical) - improved style */
   .vertical-slider-container {
     position: absolute;
-    right: -60px; /* shift it to the side */
+    right: -60px; /* shift to the side */
     top: 50%;
     transform: translateY(-50%);
     width: 50px;
@@ -175,22 +177,15 @@
     cursor: pointer;
   }
   .vertical-slider::-webkit-slider-runnable-track {
-    height: 5px;
-    background: rgba(255,255,255,0.8);
-    border-radius: 5px;
-  }
-
-  /* Display second slider's value near the top as well */
-  .header2 {
-    margin-top: 10px;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 1px 1px 3px #000;
+    height: 8px;
+    border-radius: 8px;
+    background: linear-gradient(0deg, #4CAF50 0%, #2196F3 100%);
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
   }
 </style>
 </head>
 <body>
-  <!-- Display the values of the two sliders -->
+  <!-- Slider value displays at the top -->
   <div class="header" id="sliderValueDisplay">Angle 1: 0°</div>
   <div class="header2" id="sliderValueDisplay2">Angle 2: 0°</div>
 
@@ -200,12 +195,9 @@
     <div class="arrow-button arrow-left" data-direction="left">←</div>
     <div class="arrow-button arrow-right" data-direction="right">→</div>
 
-    <!-- Fire button in the center, colored red -->
     <div class="fire-button" id="fireButton">FIRE</div>
-    
-    <div class="status">Ready</div>
 
-    <!-- Second slider container stuck to the right side of the container -->
+    <!-- Vertical slider for second angle -->
     <div class="vertical-slider-container">
       <input
         type="range"
@@ -231,18 +223,21 @@
   </div>
 
 <script>
-  const statusDiv = document.querySelector('.status');
   const slider1 = document.getElementById('halfCircleSlider');
   const slider2 = document.getElementById('sideSlider');
   const sliderValueDisplay = document.getElementById('sliderValueDisplay');
   const sliderValueDisplay2 = document.getElementById('sliderValueDisplay2');
   const fireButton = document.getElementById('fireButton');
 
+  const arrowButtons = document.querySelectorAll('.arrow-button');
+
   // Handle arrow button clicks
-  document.querySelectorAll('.arrow-button').forEach(button => {
+  arrowButtons.forEach(button => {
     button.addEventListener('click', async () => {
       const direction = button.getAttribute('data-direction');
-      statusDiv.textContent = 'Updating...';
+      // Immediately turn this button green (active)
+      button.classList.add('active');
+
       try {
         const res = await fetch('/update', {
           method: 'POST',
@@ -250,15 +245,19 @@
           body: JSON.stringify({ direction })
         });
         const data = await res.json();
-        statusDiv.textContent = `${direction} = ${data[direction]}`;
-      } catch (e) {
-        console.error(e);
-        statusDiv.textContent = 'Error';
+        console.log(data);
+        
+        // Wait 2 seconds (matching server logic), then revert color
+        setTimeout(() => {
+          button.classList.remove('active');
+        }, 2000);
+      } catch (err) {
+        console.error(err);
       }
     });
   });
 
-  // First slider (horizontal half-circle)
+  // Half-circle slider (angle1)
   slider1.addEventListener('input', async () => {
     sliderValueDisplay.textContent = `Angle 1: ${slider1.value}°`;
     try {
@@ -274,7 +273,7 @@
     }
   });
 
-  // Second slider (vertical)
+  // Vertical slider (angle2)
   slider2.addEventListener('input', async () => {
     sliderValueDisplay2.textContent = `Angle 2: ${slider2.value}°`;
     try {
@@ -292,17 +291,19 @@
 
   // Fire button
   fireButton.addEventListener('click', async () => {
-    statusDiv.textContent = 'Firing...';
+    fireButton.classList.add('active');
     try {
-      const res = await fetch('/fire', {
-        method: 'POST'
-      });
+      const res = await fetch('/fire', { method: 'POST' });
       const data = await res.json();
       console.log('State after fire:', data);
-      statusDiv.textContent = `FIRE = ${data.fire}`;
+
+      // Also revert color after 2 seconds
+      setTimeout(() => {
+        fireButton.classList.remove('active');
+      }, 2000);
     } catch (err) {
       console.error(err);
-      statusDiv.textContent = 'Error';
+      fireButton.classList.remove('active');
     }
   });
 </script>

@@ -1,105 +1,89 @@
+
 const express = require('express');
 const path = require('path');
 
 const app = express();
 
+/*
+  State includes:
+  - up, down, left, right: arrow booleans
+  - angle: first slider (0–90)
+  - angle2: second slider (0–90)
+  - fire: indicates if FIRE was pressed (2s)
+*/
 let state = {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    '10': false,
-    '45': false,
-    '90': false,
-    '-10': false,
-    '-45': false,
-    '-90': false,
-    fire: false,
-    arm: false,
-    forward: false,
-    backwards: false,
-    '1footup': false,
-    '1footdown': false
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+  angle: 0,
+  angle2: 0,
+  fire: false
 };
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-function deactivateExclusiveButtons(except) {
-    if (except !== 'forward') state.forward = false;
-    if (except !== 'backwards') state.backwards = false;
-    if (except !== 'arm') state.arm = false;
-}
+// POST /update: set one direction to true for 2 seconds
+app.post('/update', (req, res) => {
+  const { direction } = req.body;
+  if (!Object.hasOwn(state, direction)) {
+    return res.status(400).json({ error: 'Invalid direction' });
+  }
 
-function handleMomentaryAction(action) {
-    if (!state[action]) {
-        state[action] = true;
-        setTimeout(() => {
-            state[action] = false;
-        }, 2000);
-    }
-}
+  // Reset all arrow states
+  state.up = false;
+  state.down = false;
+  state.left = false;
+  state.right = false;
 
-app.post('/forward', (req, res) => {
-    if (state.forward) {
-        state.forward = false;
-    } else {
-        deactivateExclusiveButtons('forward');
-        state.forward = true;
-    }
-    res.json(state);
+  // Set the chosen direction to true
+  state[direction] = true;
+
+  // Reset after 2 seconds
+  setTimeout(() => {
+    state[direction] = false;
+  }, 2000);
+
+  res.json(state);
 });
 
-app.post('/backwards', (req, res) => {
-    if (state.backwards) {
-        state.backwards = false;
-    } else {
-        deactivateExclusiveButtons('backwards');
-        state.backwards = true;
-    }
-    res.json(state);
+// POST /slider: update the main angle
+app.post('/slider', (req, res) => {
+  const { angle } = req.body;
+  const numAngle = parseInt(angle, 10);
+
+  if (isNaN(numAngle) || numAngle < 0 || numAngle > 90) {
+    return res.status(400).json({ error: 'Angle must be 0–90.' });
+  }
+  state.angle = numAngle;
+  res.json(state);
 });
 
-app.post('/arm', (req, res) => {
-    if (state.arm) {
-        state.arm = false;
-    } else {
-        deactivateExclusiveButtons('arm');
-        state.arm = true;
-    }
-    res.json(state);
+// POST /slider2: update the second slider (angle2)
+app.post('/slider2', (req, res) => {
+  const { angle2 } = req.body;
+  const numAngle2 = parseInt(angle2, 10);
+
+  if (isNaN(numAngle2) || numAngle2 < 0 || numAngle2 > 90) {
+    return res.status(400).json({ error: 'Angle2 must be 0–90.' });
+  }
+  state.angle2 = numAngle2;
+  res.json(state);
 });
 
-app.post('/angle', (req, res) => {
-    const { angle } = req.body;
-    const numAngle = parseInt(angle, 10);
-
-    const validAngles = [10, 45, 90, -10, -45, -90];
-    if (!validAngles.includes(numAngle)) {
-        return res.status(400).json({ error: 'Invalid angle value.' });
-    }
-
-    handleMomentaryAction(angle);
-    res.json(state);
-});
-
+// POST /fire: set fire = true for 2 seconds
 app.post('/fire', (req, res) => {
-    handleMomentaryAction('fire');
-    res.json(state);
+  state.fire = true;
+  setTimeout(() => {
+    state.fire = false;
+  }, 2000);
+  res.json(state);
 });
 
-app.post('/1footup', (req, res) => {
-    handleMomentaryAction('1footup');
-    res.json(state);
-});
-
-app.post('/1footdown', (req, res) => {
-    handleMomentaryAction('1footdown');
-    res.json(state);
-});
-
+// GET /state: returns the entire JSON state
 app.get('/state', (req, res) => {
-    res.json(state);
+  res.json(state);
 });
 
 const PORT = process.env.PORT || 3000;

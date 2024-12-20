@@ -1,52 +1,44 @@
-// server.js
-
 const express = require('express');
 const path = require('path');
 
 const app = express();
 
-// Middleware to parse JSON bodies
 app.use(express.json());
-
-// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
 /*
-  State Structure:
-  - Toggle Buttons: forward, backwards, arm
-  - Momentary Buttons: fire, 1footup, 1footdown
-  - Angle Buttons: "10", "45", "90", "-10", "-45", "-90"
-  - Sliders: angle1, angle2 (from old frontend)
+  State includes:
+  - up, down, left, right: arrow booleans from old frontend (/update)
+  - angle: main angle from old frontend (/slider)
+  - angle2: second angle from old frontend (/slider2)
+  - fire: indicates if FIRE was pressed (2s)
+  - arm: toggle button from new frontend
+  - forward, backwards: toggle buttons from new frontend
+  - 1footup, 1footdown: momentary buttons from new frontend
+  - 10, 45, 90, -10, -45, -90: angle buttons from new frontend
 */
+
 let state = {
-  // Toggle Buttons
+  up: false,
+  down: false,
+  left: false,
+  right: false,
+  angle: 0,
+  angle2: 0,
+  fire: false,
+  arm: false,
   forward: false,
   backwards: false,
-  arm: false,
-
-  // Momentary Buttons
-  fire: false,
   '1footup': false,
   '1footdown': false,
-
-  // Angle Buttons
   '10': false,
   '45': false,
   '90': false,
   '-10': false,
   '-45': false,
-  '-90': false,
-
-  // Sliders (Old Frontend)
-  angle1: 0,
-  angle2: 0,
+  '-90': false
 };
 
-/**
- * Helper Function: Deactivate Toggle Buttons Except Specified One
- * Ensures mutual exclusivity among forward, backwards, and arm buttons.
- * @param {string} except - The button to remain active.
- */
 function deactivateExclusiveButtons(except) {
   const toggles = ['forward', 'backwards', 'arm'];
   toggles.forEach(toggle => {
@@ -56,105 +48,86 @@ function deactivateExclusiveButtons(except) {
   });
 }
 
-// ------------------- New Endpoints -------------------
+// Old frontend endpoints
+app.post('/update', (req, res) => {
+  const { direction } = req.body;
+  const valid = ['up', 'down', 'left', 'right'];
+  if (!valid.includes(direction)) {
+    return res.status(400).json({ error: 'Invalid direction' });
+  }
+  state.up = false;
+  state.down = false;
+  state.left = false;
+  state.right = false;
+  state[direction] = true;
+  setTimeout(() => {
+    state[direction] = false;
+  }, 2000);
+  res.json(state);
+});
 
-/**
- * Endpoint: POST /forward
- * Toggles the 'forward' button. Ensures mutual exclusivity.
- */
+app.post('/slider', (req, res) => {
+  const { angle } = req.body;
+  const num = parseInt(angle, 10);
+  if (isNaN(num) || num < 0 || num > 90) {
+    return res.status(400).json({ error: 'Angle must be 0–90.' });
+  }
+  state.angle = num;
+  res.json(state);
+});
+
+app.post('/slider2', (req, res) => {
+  const { angle2 } = req.body;
+  const num2 = parseInt(angle2, 10);
+  if (isNaN(num2) || num2 < 0 || num2 > 90) {
+    return res.status(400).json({ error: 'Angle2 must be 0–90.' });
+  }
+  state.angle2 = num2;
+  res.json(state);
+});
+
+app.post('/fire', (req, res) => {
+  state.fire = true;
+  setTimeout(() => {
+    state.fire = false;
+  }, 2000);
+  res.json(state);
+});
+
+// New frontend endpoints
 app.post('/forward', (req, res) => {
   if (state.forward) {
-    // Deactivate if already active
     state.forward = false;
   } else {
-    // Activate and deactivate others
     deactivateExclusiveButtons('forward');
     state.forward = true;
   }
   res.json(state);
 });
 
-/**
- * Endpoint: POST /backwards
- * Toggles the 'backwards' button. Ensures mutual exclusivity.
- */
 app.post('/backwards', (req, res) => {
   if (state.backwards) {
-    // Deactivate if already active
     state.backwards = false;
   } else {
-    // Activate and deactivate others
     deactivateExclusiveButtons('backwards');
     state.backwards = true;
   }
   res.json(state);
 });
 
-/**
- * Endpoint: POST /arm
- * Toggles the 'arm' button. Ensures mutual exclusivity.
- */
 app.post('/arm', (req, res) => {
   if (state.arm) {
-    // Deactivate if already active
     state.arm = false;
   } else {
-    // Activate and deactivate others
     deactivateExclusiveButtons('arm');
     state.arm = true;
   }
   res.json(state);
 });
 
-/**
- * Endpoint: POST /angle
- * Toggles an individual angle button.
- * Expects a JSON body with 'angle': number (e.g., 10, -45).
- */
-app.post('/angle', (req, res) => {
-  const { angle } = req.body;
-
-  // Validate that angle is provided and is a number
-  if (angle === undefined || typeof angle !== 'number') {
-    return res.status(400).json({ error: 'Angle must be a number.' });
-  }
-
-  // Define valid angles
-  const validAngles = [10, 45, 90, -10, -45, -90];
-
-  if (!validAngles.includes(angle)) {
-    return res.status(400).json({ error: 'Invalid angle value.' });
-  }
-
-  // Toggle the specific angle state
-  state[angle] = !state[angle];
-
-  res.json(state);
-});
-
-/**
- * Endpoint: POST /fire
- * Activates the 'fire' button for 2 seconds.
- */
-app.post('/fire', (req, res) => {
-  if (!state.fire) {
-    state.fire = true;
-    // Reset after 2 seconds
-    setTimeout(() => {
-      state.fire = false;
-    }, 2000);
-  }
-  res.json(state);
-});
-
-/**
- * Endpoint: POST /1footup
- * Activates the '1footup' button for 2 seconds.
- */
 app.post('/1footup', (req, res) => {
   if (!state['1footup']) {
     state['1footup'] = true;
-    // Reset after 2 seconds
     setTimeout(() => {
       state['1footup'] = false;
     }, 2000);
@@ -162,14 +135,9 @@ app.post('/1footup', (req, res) => {
   res.json(state);
 });
 
-/**
- * Endpoint: POST /1footdown
- * Activates the '1footdown' button for 2 seconds.
- */
 app.post('/1footdown', (req, res) => {
   if (!state['1footdown']) {
     state['1footdown'] = true;
-    // Reset after 2 seconds
     setTimeout(() => {
       state['1footdown'] = false;
     }, 2000);
@@ -177,79 +145,23 @@ app.post('/1footdown', (req, res) => {
   res.json(state);
 });
 
-// ------------------- Old Endpoints -------------------
-
-/**
- * Endpoint: POST /update
- * Handles arrow button directions from the old frontend.
- * Expects a JSON body with 'direction': string ('up', 'down', 'left', 'right').
- */
-app.post('/update', (req, res) => {
-  const { direction } = req.body;
-
-  const validDirections = ['up', 'down', 'left', 'right'];
-
-  if (!direction || !validDirections.includes(direction)) {
-    return res.status(400).json({ error: 'Invalid direction.' });
-  }
-
-  // Example logic: set the corresponding direction to true for 2 seconds
-  state[direction] = true;
-
-  // Reset after 2 seconds
-  setTimeout(() => {
-    state[direction] = false;
-  }, 2000);
-
-  res.json(state);
-});
-
-/**
- * Endpoint: POST /slider
- * Handles angle1 slider from the old frontend.
- * Expects a JSON body with 'angle': number.
- */
-app.post('/slider', (req, res) => {
+app.post('/angle', (req, res) => {
   const { angle } = req.body;
+  const numAngle = parseInt(angle, 10);
+  const validAngles = [10, 45, 90, -10, -45, -90];
 
-  if (angle === undefined || typeof angle !== 'number') {
-    return res.status(400).json({ error: 'Angle must be a number.' });
+  if (isNaN(numAngle) || !validAngles.includes(numAngle)) {
+    return res.status(400).json({ error: 'Invalid angle value.' });
   }
 
-  // Update angle1
-  state.angle1 = angle;
-
+  state[angle] = !state[angle];
   res.json(state);
 });
 
-/**
- * Endpoint: POST /slider2
- * Handles angle2 slider from the old frontend.
- * Expects a JSON body with 'angle2': number.
- */
-app.post('/slider2', (req, res) => {
-  const { angle2 } = req.body;
-
-  if (angle2 === undefined || typeof angle2 !== 'number') {
-    return res.status(400).json({ error: 'angle2 must be a number.' });
-  }
-
-  // Update angle2
-  state.angle2 = angle2;
-
-  res.json(state);
-});
-
-/**
- * Endpoint: GET /state
- * Returns the current state of all buttons and sliders.
- */
+// State endpoint
 app.get('/state', (req, res) => {
   res.json(state);
 });
 
-// Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

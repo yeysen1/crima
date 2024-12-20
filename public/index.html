@@ -1,285 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Custom Layout Control Panel</title>
-<style>
-  body {
-    margin: 0;
-    padding: 0;
-    background: url('background.png') no-repeat center center fixed;
-    background-size: cover;
-    font-family: sans-serif;
-    color: #fff;
-    overflow: hidden;
-  }
-
-  .button {
-    background: #444;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    padding: 10px 20px;
-    cursor: pointer;
-    color: #fff;
-    text-align: center;
-    user-select: none;
-    margin: 5px;
-    display: inline-block;
-    font-weight: bold;
-  }
-
-  .button:active {
-    background: #666;
-  }
-
-  .button.active {
-    background: green;
-    color: #fff;
-  }
-
-  .container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
-
-  /* Layout:
-     - 1 Foot Up at top center
-     - Forward/ARM in middle row below 1 Foot Up
-     - Backwards below that
-     - 1 Foot Down below that
-     - FIRE button to the far right at same vertical level as 1 Foot Down
-     - Angle buttons on the left and right sides
-  */
-
-  .top-center {
-    position: absolute;
-    top: 10%;
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-  }
-
-  .middle-row {
-    text-align: center;
-    margin-top: 20px;
-  }
-
-  .single-row {
-    text-align: center;
-    margin-top: 20px;
-  }
-
-  .bottom-center-row {
-    text-align: center;
-    margin-top: 20px;
-    position: relative; /* so we can align FIRE button more easily */
-  }
-
-  /* We'll place FIRE at the same vertical level as 1 Foot Down:
-     1 Foot Down is inside .bottom-center-row, so let's anchor to it.
-  */
-  .fire-container {
-    position: absolute;
-    right: -200px; /* adjust as needed to place it far right */
-    top: 50%;
-    transform: translateY(-50%);
-  }
-
-  /* If you want FIRE truly at far-right of screen, do this instead: */
-  .far-right {
-    position: absolute;
-    right: 5%;
-    /* Approximate vertical alignment with bottom-center-row:
-       bottom-center-row is about 10% + ~60px from top. Let's just visually align it:
-    */
-    top: calc(10% + 60px + 60px); /* adjust as needed */
-    transform: translateY(-50%);
-  }
-
-  /* For a closer approximation:
-     We have 1 Foot Up at top:10%
-     Forward/ARM row ~20px below
-     Backwards row another ~20px below
-     1 Foot Down another ~20px below
-     That's about 10% + 60px total vertical offset.
-     We'll pick a top that matches that. Adjust if needed.
-  */
-
-  .left-angles {
-    position: absolute;
-    top: 50%;
-    left: 5%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .right-angles {
-    position: absolute;
-    top: 50%;
-    right: 5%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .state-display {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(0,0,0,0.7);
-    color: #0f0;
-    padding: 10px;
-    border-radius: 5px;
-    font-family: monospace;
-    font-size: 0.9em;
-    white-space: pre;
-    max-width: 300px;
-    max-height: 300px;
-    overflow: auto;
-  }
-
-</style>
+    <meta charset="UTF-8">
+    <title>Control Panel</title>
+    <style>
+        /* ... (Your existing CSS styles) ... */
+        .active { /* Improved active style */
+            background-color: #4CAF50;
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-  <!-- Left angles (momentary) -->
-  <div class="left-angles">
-    <div class="button momentary-button" data-action="10">10°</div>
-    <div class="button momentary-button" data-action="45">45°</div>
-    <div class="button momentary-button" data-action="90">90°</div>
-  </div>
+    <div class="container">
+        </div>
+    <div class="json-display" id="jsonDisplay">Loading state...</div>
 
-  <!-- Right angles (momentary) -->
-  <div class="right-angles">
-    <div class="button momentary-button" data-action="-10">-10°</div>
-    <div class="button momentary-button" data-action="-45">-45°</div>
-    <div class="button momentary-button" data-action="-90">-90°</div>
-  </div>
+    <script>
+        const jsonDisplay = document.getElementById('jsonDisplay');
+        const armButton = document.getElementById('armButton');
+        const fireButton = document.getElementById('fireButton');
+        const angleButtons = document.querySelectorAll('.angle-button');
+        const centralButtons = document.querySelectorAll('.central-button');
+        const momentaryButtons = document.querySelectorAll('.fire-button, .central-button[data-action="1footup"], .central-button[data-action="1footdown"]');
 
-  <!-- Top center -->
-  <div class="top-center">
-    <div class="button momentary-button" data-action="1footup">1 Foot Up</div>
+        async function fetchState() {
+            try {
+                const res = await fetch('/state');
+                const data = await res.json();
+                jsonDisplay.textContent = JSON.stringify(data, null, 2);
 
-    <div class="middle-row">
-      <div class="button toggle-button" data-toggle="forward">Forward</div>
-      <div class="button toggle-button" data-toggle="arm">ARM</div>
-    </div>
+                // Update non-momentary buttons (forward, backwards, arm)
+                centralButtons.forEach(button => {
+                    const action = button.getAttribute('data-action');
+                    if (action === 'forward' || action === 'backwards') {
+                        button.classList.toggle('active', data[action]);
+                    }
+                });
+                armButton.classList.toggle('active', data.arm);
 
-    <div class="single-row">
-      <div class="button toggle-button" data-toggle="backwards">Backwards</div>
-    </div>
+            } catch (err) {
+                jsonDisplay.textContent = 'Error fetching state';
+                console.error(err);
+            }
+        }
 
-    <div class="bottom-center-row">
-      <div class="button momentary-button" data-action="1footdown">1 Foot Down</div>
-    </div>
-  </div>
+        fetchState();
+        setInterval(fetchState, 1000);
 
-  <!-- Far right FIRE (momentary) 
-       Adjust top calculation to match vertical alignment with 1 Foot Down
-  -->
-  <div class="far-right">
-    <div class="button momentary-button" data-action="fire">FIRE</div>
-  </div>
+        angleButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const angle = button.getAttribute('data-angle');
+                button.classList.add('active');
+                try {
+                    await fetch('/angle', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ angle: parseInt(angle, 10) })
+                    });
+                } catch (err) {
+                    console.error(err);
+                }
+                setTimeout(() => button.classList.remove('active'), 2000);
+            });
+        });
 
-  <!-- JSON State -->
-  <div class="state-display" id="stateDisplay">Loading state...</div>
-</div>
-
-<script>
-const stateDisplay = document.getElementById('stateDisplay');
-
-document.querySelectorAll('.momentary-button').forEach(btn => {
-  btn.addEventListener('click', () => handleMomentary(btn));
-});
-
-document.querySelectorAll('.toggle-button').forEach(btn => {
-  btn.addEventListener('click', () => handleToggle(btn));
-});
-
-function handleMomentary(button) {
-  const action = button.getAttribute('data-action');
-  // Momentary: Turn green immediately
-  button.classList.add('active');
-  let payload = {};
-  payload[action] = true;
-  postJSON('/update', payload)
-    .then(() => {
-      // Keep it active for exactly 2 seconds, then revert
-      setTimeout(() => {
-        button.classList.remove('active');
-      }, 2000);
-    });
-}
-
-function handleToggle(button) {
-  const toggle = button.getAttribute('data-toggle');
-  const isActive = button.classList.contains('active');
-  if (isActive) {
-    // Deactivate
-    let payload = {};
-    payload[toggle] = false;
-    postJSON('/update', payload);
-  } else {
-    // Activate this and deactivate others in the group
-    let payload = {forward:false, arm:false, backwards:false};
-    payload[toggle] = true;
-    postJSON('/update', payload);
-  }
-}
-
-function postJSON(url, data) {
-  return fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(data)
-  });
-}
-
-setInterval(fetchState, 1000);
-fetchState();
-
-function fetchState() {
-  fetch('/state')
-    .then(res => res.json())
-    .then(state => {
-      stateDisplay.textContent = JSON.stringify(state, null, 2);
-      syncUIWithState(state);
-    })
-    .catch(err => {
-      stateDisplay.textContent = 'Error fetching state: ' + err;
-    });
-}
-
-function syncUIWithState(state) {
-  // Toggle buttons
-  const toggleMap = {
-    forward: document.querySelector('.toggle-button[data-toggle="forward"]'),
-    arm: document.querySelector('.toggle-button[data-toggle="arm"]'),
-    backwards: document.querySelector('.toggle-button[data-toggle="backwards"]')
-  };
-  for (let key in toggleMap) {
-    if (toggleMap[key]) toggleMap[key].classList.remove('active');
-  }
-  if (state.forward) toggleMap.forward.classList.add('active');
-  if (state.arm) toggleMap.arm.classList.add('active');
-  if (state.backwards) toggleMap.backwards.classList.add('active');
-
-  // We do not forcibly revert momentary buttons here since we rely on the local 2s timer.
-  // The backend also flips them back, but we already revert after 2s no matter what.
-  // If you want to force them off based on state, you could do so here:
-  // document.querySelectorAll('.momentary-button').forEach(btn => {
-  //   const action = btn.getAttribute('data-action');
-  //   if (!state[action]) {
-  //     btn.classList.remove('active');
-  //   }
-  // });
-  // But since we handle 2s revert locally, this isn't needed.
-}
-</script>
+        momentaryButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const action = button.getAttribute('data-action');
+                button.classList.add('active');
+                try {
+                    await fetch(`/${action}`, { method: 'POST' });
+                } catch (err) {
+                    console.error(err);
+                }
+                setTimeout(() => button.classList.remove('active'), 2000);
+            });
+        });
+    </script>
 </body>
 </html>

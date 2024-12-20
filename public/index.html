@@ -1,311 +1,352 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Arrow Control with Dual Sliders + Fire</title>
-<style>
-  body {
-    margin: 0;
-    font-family: sans-serif;
-    /* Local PNG background (place 'background.png' in the same 'public' folder) */
-    background: url('slh.png') no-repeat center center;
-    background-size: cover;
+  <meta charset="UTF-8" />
+  <title>Control Panel with Buttons + Fire</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: url('slh.png') no-repeat center center;
+      background-size: cover;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #fff;
+      position: relative;
+    }
 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    height: 100vh;
-    color: #fff;
-  }
+    .container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      /* Adjust size as needed */
+    }
 
-  .header {
-    margin-top: 20px;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 1px 1px 3px #000;
-  }
+    /* Arrow buttons */
+    .arrow-button {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      text-align: center;
+      line-height: 60px;
+      background: rgba(255,255,255,0.8);
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      user-select: none;
+    }
 
-  .header2 {
-    margin-top: 10px;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 1px 1px 3px #000;
-  }
+    .arrow-button.left {
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
 
-  .container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin-top: 40px;
-  }
+    .arrow-button.right {
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
 
-  .arrow-button {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    font-size: 24px;
-    text-align: center;
-    line-height: 50px;
-    background: rgba(255,255,255,0.8);
-    color: #333;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
+    /* Angle buttons */
+    .angle-button {
+      position: absolute;
+      width: 80px;
+      height: 40px;
+      font-size: 16px;
+      text-align: center;
+      line-height: 40px;
+      background: rgba(255,255,255,0.8);
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      user-select: none;
+    }
 
-  .arrow-up {
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .arrow-down {
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .arrow-left {
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
-  .arrow-right {
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-  }
+    /* Arrange angle buttons in a triangle */
+    .angle-top {
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
 
-  /* "active" class will change button color to green */
-  .arrow-button.active {
-    background-color: #4CAF50; /* green */
-    color: #fff;
-  }
+    .angle-left {
+      top: 150px;
+      left: 50%;
+      transform: translateX(-100%) translateY(-50%);
+    }
 
-  /* Fire button in the center */
-  .fire-button {
-    position: absolute;
-    width: 80px;
-    height: 50px;
-    font-size: 20px;
-    text-align: center;
-    line-height: 50px;
-    background: red;
-    color: #fff;
-    border: 2px solid #fff;
-    border-radius: 5px;
-    cursor: pointer;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    transition: background-color 0.2s ease;
-  }
-  .fire-button:hover {
-    background-color: #f33;
-  }
-  .fire-button.active {
-    background-color: #FF4500; /* orangered when active */
-  }
+    .angle-right {
+      top: 150px;
+      left: 50%;
+      transform: translateX(0%) translateY(-50%);
+    }
 
-  .slider-container {
-    margin-top: 50px;
-    position: relative;
-    width: 200px;
-    height: 100px;
-  }
+    /* Center Control Buttons */
+    .center-buttons {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
 
-  /* Half-circle slider - improved style */
-  .half-circle-slider {
-    width: 100%;
-    margin: 0;
-    appearance: none;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    transform-origin: center;
-    transform: rotate(-180deg);
-  }
-  .half-circle-slider:focus {
-    outline: none;
-  }
-  .half-circle-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: #fff;
-    border: 2px solid #333;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  /* Gradient track for half-circle slider */
-  .half-circle-slider::-webkit-slider-runnable-track {
-    height: 8px;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #4CAF50 0%, #2196F3 100%);
-    box-shadow: 0 0 3px rgba(0,0,0,0.5);
-  }
+    .center-button {
+      width: 100px;
+      height: 40px;
+      font-size: 16px;
+      text-align: center;
+      line-height: 40px;
+      background: rgba(255,255,255,0.8);
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      user-select: none;
+    }
 
-  /* Second slider (vertical) - improved style */
-  .vertical-slider-container {
-    position: absolute;
-    right: -60px; /* shift to the side */
-    top: 50%;
-    transform: translateY(-50%);
-    width: 50px;
-    height: 200px;
-  }
-  .vertical-slider {
-    writing-mode: bt-lr; /* vertical slider trick */
-    transform: rotate(-90deg); 
-    width: 200px;
-    margin: 0;
-    appearance: none;
-    position: absolute;
-    top: 75px;
-    left: -75px;
-  }
-  .vertical-slider:focus {
-    outline: none;
-  }
-  .vertical-slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    background: #fff;
-    border: 2px solid #333;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  .vertical-slider::-webkit-slider-runnable-track {
-    height: 8px;
-    border-radius: 8px;
-    background: linear-gradient(0deg, #4CAF50 0%, #2196F3 100%);
-    box-shadow: 0 0 3px rgba(0,0,0,0.5);
-  }
-</style>
+    /* ARM and FIRE buttons */
+    .arm-button, .fire-button {
+      position: absolute;
+      width: 80px;
+      height: 40px;
+      font-size: 16px;
+      text-align: center;
+      line-height: 40px;
+      background: red;
+      color: #fff;
+      border: 2px solid #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      user-select: none;
+    }
+
+    .arm-button {
+      top: 50%;
+      right: -120px; /* Position to the far right */
+      transform: translateY(-60px);
+      background: orange;
+    }
+
+    .fire-button {
+      top: 50%;
+      right: -120px; /* Positioned below the ARM button */
+      transform: translateY(20px);
+      background: red;
+    }
+
+    .arm-button:hover {
+      background-color: #e68a00;
+    }
+
+    .fire-button:hover {
+      background-color: #ff3333;
+    }
+
+    /* JSON State Display */
+    .json-display {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0,0,0,0.7);
+      color: #0f0;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 300px;
+      max-height: 200px;
+      overflow: auto;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    /* Active state styling */
+    .arrow-button.active,
+    .angle-button.active,
+    .center-button.active,
+    .arm-button.active,
+    .fire-button.active {
+      background-color: #4CAF50; /* Green */
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
-  <!-- Slider value displays at the top -->
-  <div class="header" id="sliderValueDisplay">Angle 1: 0°</div>
-  <div class="header2" id="sliderValueDisplay2">Angle 2: 0°</div>
-
+  <!-- Control Container -->
   <div class="container">
-    <div class="arrow-button arrow-up" data-direction="up">↑</div>
-    <div class="arrow-button arrow-down" data-direction="down">↓</div>
-    <div class="arrow-button arrow-left" data-direction="left">←</div>
-    <div class="arrow-button arrow-right" data-direction="right">→</div>
+    <!-- Left and Right Arrow Buttons -->
+    <div class="arrow-button left" data-direction="left">←</div>
+    <div class="arrow-button right" data-direction="right">→</div>
 
-    <div class="fire-button" id="fireButton">FIRE</div>
+    <!-- Angle Buttons Forming a Triangle -->
+    <div class="angle-button angle-top" data-angle="10">10°</div>
+    <div class="angle-button angle-left" data-angle="45">45°</div>
+    <div class="angle-button angle-right" data-angle="90">90°</div>
 
-    <!-- Vertical slider for second angle -->
-    <div class="vertical-slider-container">
-      <input
-        type="range"
-        class="vertical-slider"
-        min="0"
-        max="90"
-        value="0"
-        id="sideSlider"
-      />
+    <!-- Center Control Buttons -->
+    <div class="center-buttons">
+      <div class="center-button" data-action="forward">Forward</div>
+      <div class="center-button" data-action="forward1foot">1 Foot</div>
+      <div class="center-button" data-action="backwards">Backwards</div>
+      <div class="center-button" data-action="backward1foot">1 Foot B</div>
     </div>
+
+    <!-- ARM Button -->
+    <div class="arm-button" id="armButton">ARM</div>
+
+    <!-- FIRE Button below ARM Button -->
+    <div class="fire-button" id="fireButton">FIRE</div>
   </div>
 
-  <!-- Horizontal half-circle slider -->
-  <div class="slider-container">
-    <input
-      type="range"
-      class="half-circle-slider"
-      min="0"
-      max="90"
-      value="0"
-      id="halfCircleSlider"
-    />
-  </div>
+  <!-- JSON State Display -->
+  <div class="json-display" id="jsonDisplay">Loading state...</div>
 
-<script>
-  const slider1 = document.getElementById('halfCircleSlider');
-  const slider2 = document.getElementById('sideSlider');
-  const sliderValueDisplay = document.getElementById('sliderValueDisplay');
-  const sliderValueDisplay2 = document.getElementById('sliderValueDisplay2');
-  const fireButton = document.getElementById('fireButton');
+  <script>
+    const jsonDisplay = document.getElementById('jsonDisplay');
+    const armButton = document.getElementById('armButton');
+    const fireButton = document.getElementById('fireButton');
+    const arrowButtons = document.querySelectorAll('.arrow-button');
+    const angleButtons = document.querySelectorAll('.angle-button');
+    const centerButtons = document.querySelectorAll('.center-button');
 
-  const arrowButtons = document.querySelectorAll('.arrow-button');
-
-  // Handle arrow button clicks
-  arrowButtons.forEach(button => {
-    button.addEventListener('click', async () => {
-      const direction = button.getAttribute('data-direction');
-      // Immediately turn this button green (active)
-      button.classList.add('active');
-
+    // Function to fetch and display the current state
+    async function fetchState() {
       try {
-        const res = await fetch('/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ direction })
-        });
+        const res = await fetch('/state');
         const data = await res.json();
-        console.log(data);
-        
-        // Wait 2 seconds (matching server logic), then revert color
+        jsonDisplay.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        jsonDisplay.textContent = 'Error fetching state';
+        console.error(err);
+      }
+    }
+
+    // Initial fetch and set interval to update state every second
+    fetchState();
+    setInterval(fetchState, 1000);
+
+    // Handle Arrow Button Clicks
+    arrowButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        const direction = button.getAttribute('data-direction');
+        button.classList.add('active');
+
+        try {
+          const res = await fetch('/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ direction })
+          });
+          const data = await res.json();
+          console.log(`Direction ${direction} activated:`, data);
+        } catch (err) {
+          console.error(err);
+        }
+
+        // Remove active state after 2 seconds
         setTimeout(() => {
           button.classList.remove('active');
         }, 2000);
+      });
+    });
+
+    // Handle Angle Button Clicks
+    angleButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        const angle = button.getAttribute('data-angle');
+        button.classList.add('active');
+
+        try {
+          const res = await fetch('/slider', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ angle: parseInt(angle, 10) })
+          });
+          const data = await res.json();
+          console.log(`Angle set to ${angle}°:`, data);
+        } catch (err) {
+          console.error(err);
+        }
+
+        // Remove active state after 1 second
+        setTimeout(() => {
+          button.classList.remove('active');
+        }, 1000);
+      });
+    });
+
+    // Handle Center Control Buttons Clicks
+    centerButtons.forEach(button => {
+      button.addEventListener('click', async () => {
+        const action = button.getAttribute('data-action');
+        button.classList.add('active');
+
+        try {
+          const res = await fetch(`/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+          });
+          const data = await res.json();
+          console.log(`Action ${action} activated:`, data);
+        } catch (err) {
+          console.error(err);
+        }
+
+        // Remove active state after 2 seconds
+        setTimeout(() => {
+          button.classList.remove('active');
+        }, 2000);
+      });
+    });
+
+    // Handle ARM Button Click
+    armButton.addEventListener('click', async () => {
+      armButton.classList.add('active');
+
+      try {
+        const res = await fetch('/arm', { method: 'POST' });
+        const data = await res.json();
+        console.log('ARM activated:', data);
       } catch (err) {
         console.error(err);
       }
+
+      // Remove active state after 2 seconds
+      setTimeout(() => {
+        armButton.classList.remove('active');
+      }, 2000);
     });
-  });
 
-  // Half-circle slider (angle1)
-  slider1.addEventListener('input', async () => {
-    sliderValueDisplay.textContent = `Angle 1: ${slider1.value}°`;
-    try {
-      const res = await fetch('/slider', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ angle: slider1.value })
-      });
-      const data = await res.json();
-      console.log('State after slider1 update:', data);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+    // Handle FIRE Button Click
+    fireButton.addEventListener('click', async () => {
+      fireButton.classList.add('active');
 
-  // Vertical slider (angle2)
-  slider2.addEventListener('input', async () => {
-    sliderValueDisplay2.textContent = `Angle 2: ${slider2.value}°`;
-    try {
-      const res = await fetch('/slider2', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ angle2: slider2.value })
-      });
-      const data = await res.json();
-      console.log('State after slider2 update:', data);
-    } catch (err) {
-      console.error(err);
-    }
-  });
+      try {
+        const res = await fetch('/fire', { method: 'POST' });
+        const data = await res.json();
+        console.log('FIRE activated:', data);
+      } catch (err) {
+        console.error(err);
+      }
 
-  // Fire button
-  fireButton.addEventListener('click', async () => {
-    fireButton.classList.add('active');
-    try {
-      const res = await fetch('/fire', { method: 'POST' });
-      const data = await res.json();
-      console.log('State after fire:', data);
-
-      // Also revert color after 2 seconds
+      // Remove active state after 2 seconds
       setTimeout(() => {
         fireButton.classList.remove('active');
       }, 2000);
-    } catch (err) {
-      console.error(err);
-      fireButton.classList.remove('active');
-    }
-  });
-</script>
+    });
+  </script>
 </body>
 </html>

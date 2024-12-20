@@ -16,6 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
   - Toggle Buttons: forward, backwards, arm
   - Momentary Buttons: fire, 1footup, 1footdown
   - Angle Buttons: "10", "45", "90", "-10", "-45", "-90"
+  - Sliders: angle1, angle2 (from old frontend)
 */
 let state = {
   // Toggle Buttons
@@ -35,6 +36,10 @@ let state = {
   '-10': false,
   '-45': false,
   '-90': false,
+
+  // Sliders (Old Frontend)
+  angle1: 0,
+  angle2: 0,
 };
 
 /**
@@ -50,6 +55,8 @@ function deactivateExclusiveButtons(except) {
     }
   });
 }
+
+// ------------------- New Endpoints -------------------
 
 /**
  * Endpoint: POST /forward
@@ -170,9 +177,72 @@ app.post('/1footdown', (req, res) => {
   res.json(state);
 });
 
+// ------------------- Old Endpoints -------------------
+
+/**
+ * Endpoint: POST /update
+ * Handles arrow button directions from the old frontend.
+ * Expects a JSON body with 'direction': string ('up', 'down', 'left', 'right').
+ */
+app.post('/update', (req, res) => {
+  const { direction } = req.body;
+
+  const validDirections = ['up', 'down', 'left', 'right'];
+
+  if (!direction || !validDirections.includes(direction)) {
+    return res.status(400).json({ error: 'Invalid direction.' });
+  }
+
+  // Example logic: set the corresponding direction to true for 2 seconds
+  state[direction] = true;
+
+  // Reset after 2 seconds
+  setTimeout(() => {
+    state[direction] = false;
+  }, 2000);
+
+  res.json(state);
+});
+
+/**
+ * Endpoint: POST /slider
+ * Handles angle1 slider from the old frontend.
+ * Expects a JSON body with 'angle': number.
+ */
+app.post('/slider', (req, res) => {
+  const { angle } = req.body;
+
+  if (angle === undefined || typeof angle !== 'number') {
+    return res.status(400).json({ error: 'Angle must be a number.' });
+  }
+
+  // Update angle1
+  state.angle1 = angle;
+
+  res.json(state);
+});
+
+/**
+ * Endpoint: POST /slider2
+ * Handles angle2 slider from the old frontend.
+ * Expects a JSON body with 'angle2': number.
+ */
+app.post('/slider2', (req, res) => {
+  const { angle2 } = req.body;
+
+  if (angle2 === undefined || typeof angle2 !== 'number') {
+    return res.status(400).json({ error: 'angle2 must be a number.' });
+  }
+
+  // Update angle2
+  state.angle2 = angle2;
+
+  res.json(state);
+});
+
 /**
  * Endpoint: GET /state
- * Returns the current state of all buttons.
+ * Returns the current state of all buttons and sliders.
  */
 app.get('/state', (req, res) => {
   res.json(state);

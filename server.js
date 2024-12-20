@@ -6,9 +6,10 @@ const app = express();
 /*
   State includes:
   - up, down, left, right: arrow booleans
-  - angle: first slider (0–90)
-  - angle2: second slider (0–90)
+  - angle: first angle (0–90)
+  - angle2: second angle (0–90)
   - fire: indicates if FIRE was pressed (2s)
+  - arm: indicates if ARM was pressed (2s)
 */
 let state = {
   up: false,
@@ -17,7 +18,8 @@ let state = {
   right: false,
   angle: 0,
   angle2: 0,
-  fire: false
+  fire: false,
+  arm: false
 };
 
 app.use(express.json());
@@ -26,7 +28,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // POST /update: set one direction to true for 2 seconds
 app.post('/update', (req, res) => {
   const { direction } = req.body;
-  if (!Object.hasOwn(state, direction)) {
+  if (!Object.prototype.hasOwnProperty.call(state, direction)) {
     return res.status(400).json({ error: 'Invalid direction' });
   }
 
@@ -47,25 +49,25 @@ app.post('/update', (req, res) => {
   res.json(state);
 });
 
-// POST /slider: update the main angle
+// POST /slider: update the first angle
 app.post('/slider', (req, res) => {
   const { angle } = req.body;
   const numAngle = parseInt(angle, 10);
 
   if (isNaN(numAngle) || numAngle < 0 || numAngle > 90) {
-    return res.status(400).json({ error: 'Angle must be 0–90.' });
+    return res.status(400).json({ error: 'Angle must be between 0–90.' });
   }
   state.angle = numAngle;
   res.json(state);
 });
 
-// POST /slider2: update the second slider (angle2)
+// POST /slider2: update the second angle (angle2)
 app.post('/slider2', (req, res) => {
   const { angle2 } = req.body;
   const numAngle2 = parseInt(angle2, 10);
 
   if (isNaN(numAngle2) || numAngle2 < 0 || numAngle2 > 90) {
-    return res.status(400).json({ error: 'Angle2 must be 0–90.' });
+    return res.status(400).json({ error: 'Angle2 must be between 0–90.' });
   }
   state.angle2 = numAngle2;
   res.json(state);
@@ -76,6 +78,15 @@ app.post('/fire', (req, res) => {
   state.fire = true;
   setTimeout(() => {
     state.fire = false;
+  }, 2000);
+  res.json(state);
+});
+
+// POST /arm: set arm = true for 2 seconds
+app.post('/arm', (req, res) => {
+  state.arm = true;
+  setTimeout(() => {
+    state.arm = false;
   }, 2000);
   res.json(state);
 });

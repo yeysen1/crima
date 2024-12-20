@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Control Panel with Buttons + Fire</title>
+  <title>Control Panel</title>
   <style>
     body {
       margin: 0;
@@ -19,12 +19,10 @@
 
     .container {
       position: relative;
-      width: 600px;
-      height: 600px;
-      /* Adjust size as needed */
+      width: 700px;
+      height: 700px;
     }
 
-    /* Angle buttons on the left */
     .angle-buttons.left {
       position: absolute;
       top: 50%;
@@ -35,7 +33,6 @@
       gap: 20px;
     }
 
-    /* Angle buttons on the right */
     .angle-buttons.right {
       position: absolute;
       top: 50%;
@@ -47,11 +44,11 @@
     }
 
     .angle-button {
-      width: 60px;
-      height: 40px;
-      font-size: 16px;
+      width: 80px;
+      height: 50px;
+      font-size: 18px;
       text-align: center;
-      line-height: 40px;
+      line-height: 50px;
       background: rgba(255,255,255,0.8);
       color: #333;
       border: 1px solid #ccc;
@@ -61,7 +58,6 @@
       user-select: none;
     }
 
-    /* Central Buttons */
     .central-buttons {
       position: absolute;
       top: 50%;
@@ -79,11 +75,11 @@
     }
 
     .central-button {
-      width: 120px;
-      height: 40px;
-      font-size: 16px;
+      width: 140px;
+      height: 50px;
+      font-size: 18px;
       text-align: center;
-      line-height: 40px;
+      line-height: 50px;
       background: rgba(255,255,255,0.8);
       color: #333;
       border: 1px solid #ccc;
@@ -93,22 +89,12 @@
       user-select: none;
     }
 
-    /* ARM and FIRE buttons */
-    .arm-fire-buttons {
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
     .arm-button, .fire-button {
-      width: 100px;
-      height: 40px;
-      font-size: 16px;
+      width: 120px;
+      height: 50px;
+      font-size: 18px;
       text-align: center;
-      line-height: 40px;
+      line-height: 50px;
       background: red;
       color: #fff;
       border: 2px solid #fff;
@@ -130,7 +116,6 @@
       background-color: #ff3333;
     }
 
-    /* JSON State Display */
     .json-display {
       position: absolute;
       bottom: 20px;
@@ -146,48 +131,42 @@
       font-size: 14px;
     }
 
-    /* Active state styling */
     .angle-button.active,
     .central-button.active,
     .arm-button.active,
     .fire-button.active {
-      background-color: #4CAF50; /* Green */
+      background-color: #4CAF50;
       color: #fff;
     }
   </style>
 </head>
 <body>
-  <!-- Control Container -->
   <div class="container">
-    <!-- Angle Buttons on the Left -->
+    <!-- Left Positive Angles -->
     <div class="angle-buttons left">
       <div class="angle-button" data-angle="10">10°</div>
       <div class="angle-button" data-angle="45">45°</div>
       <div class="angle-button" data-angle="90">90°</div>
     </div>
 
-    <!-- Angle Buttons on the Right -->
+    <!-- Right Negative Angles -->
     <div class="angle-buttons right">
-      <div class="angle-button" data-angle="10">10°</div>
-      <div class="angle-button" data-angle="45">45°</div>
-      <div class="angle-button" data-angle="90">90°</div>
+      <div class="angle-button" data-angle="-10">-10°</div>
+      <div class="angle-button" data-angle="-45">-45°</div>
+      <div class="angle-button" data-angle="-90">-90°</div>
     </div>
 
     <!-- Central Buttons -->
     <div class="central-buttons">
-      <!-- Top Button -->
       <div class="central-button" data-action="1footup">1 Foot Up</div>
-      
-      <!-- Forward and ARM -->
+
       <div class="central-row">
         <div class="central-button" data-action="forward">Forward</div>
         <div class="arm-button" id="armButton">ARM</div>
       </div>
 
-      <!-- Backwards -->
       <div class="central-button" data-action="backwards">Backwards</div>
 
-      <!-- 1 Foot Down and FIRE -->
       <div class="central-row">
         <div class="central-button" data-action="1footdown">1 Foot Down</div>
         <div class="fire-button" id="fireButton">FIRE</div>
@@ -195,160 +174,10 @@
     </div>
   </div>
 
-  <!-- JSON State Display -->
   <div class="json-display" id="jsonDisplay">Loading state...</div>
 
   <script>
     const jsonDisplay = document.getElementById('jsonDisplay');
     const armButton = document.getElementById('armButton');
     const fireButton = document.getElementById('fireButton');
-    const angleButtons = document.querySelectorAll('.angle-button');
-    const centralButtons = document.querySelectorAll('.central-button');
-
-    // Function to fetch and display the current state
-    async function fetchState() {
-      try {
-        const res = await fetch('/state');
-        const data = await res.json();
-        jsonDisplay.textContent = JSON.stringify(data, null, 2);
-
-        // Update Forward button state
-        centralButtons.forEach(button => {
-          if (button.getAttribute('data-action') === 'forward') {
-            if (data.forward) {
-              button.classList.add('active');
-            } else {
-              button.classList.remove('active');
-            }
-          }
-          if (button.getAttribute('data-action') === 'backwards') {
-            if (data.backwards) {
-              button.classList.add('active');
-            } else {
-              button.classList.remove('active');
-            }
-          }
-          if (button.getAttribute('data-action') === '1footup' || button.getAttribute('data-action') === '1footdown') {
-            if (data[button.getAttribute('data-action')]) {
-              button.classList.add('active');
-            } else {
-              button.classList.remove('active');
-            }
-          }
-        });
-
-        // Update ARM button state
-        if (data.arm) {
-          armButton.classList.add('active');
-        } else {
-          armButton.classList.remove('active');
-        }
-
-        // Update FIRE button state
-        if (data.fire) {
-          fireButton.classList.add('active');
-        } else {
-          fireButton.classList.remove('active');
-        }
-      } catch (err) {
-        jsonDisplay.textContent = 'Error fetching state';
-        console.error(err);
-      }
-    }
-
-    // Initial fetch and set interval to update state every second
-    fetchState();
-    setInterval(fetchState, 1000);
-
-    // Handle Angle Button Clicks
-    angleButtons.forEach(button => {
-      button.addEventListener('click', async () => {
-        const angle = button.getAttribute('data-angle');
-        button.classList.add('active');
-
-        try {
-          const res = await fetch('/slider', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ angle: parseInt(angle, 10) })
-          });
-          const data = await res.json();
-          console.log(`Angle set to ${angle}°:`, data);
-        } catch (err) {
-          console.error(err);
-        }
-
-        // Remove active state after 1 second
-        setTimeout(() => {
-          button.classList.remove('active');
-        }, 1000);
-      });
-    });
-
-    // Handle Central Buttons Clicks
-    centralButtons.forEach(button => {
-      button.addEventListener('click', async () => {
-        const action = button.getAttribute('data-action');
-
-        if (action === 'forward' || action === 'backwards') {
-          // Toggle Forward or Backwards
-          try {
-            const res = await fetch(`/${action}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action })
-            });
-            const data = await res.json();
-            console.log(`Action ${action} toggled:`, data);
-          } catch (err) {
-            console.error(err);
-          }
-        } else if (action === '1footup' || action === '1footdown') {
-          // Momentary action for 1 Foot Up/Down
-          try {
-            const res = await fetch(`/${action}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action })
-            });
-            const data = await res.json();
-            console.log(`Action ${action} activated:`, data);
-          } catch (err) {
-            console.error(err);
-          }
-        }
-
-        // No need to handle active class here; it's managed by fetchState
-      });
-    });
-
-    // Handle ARM Button Click
-    armButton.addEventListener('click', async () => {
-      // Toggle ARM state
-      try {
-        const res = await fetch('/arm', { method: 'POST' });
-        const data = await res.json();
-        console.log('ARM toggled:', data);
-      } catch (err) {
-        console.error(err);
-      }
-
-      // No need to handle active class here; it's managed by fetchState
-    });
-
-    // Handle FIRE Button Click
-    fireButton.addEventListener('click', async () => {
-      // Momentary action
-      try {
-        const res = await fetch('/fire', { method: 'POST' });
-        const data = await res.json();
-        console.log('FIRE activated:', data);
-      } catch (err) {
-        console.error(err);
-      }
-
-      // No need to handle active class here; it's managed by fetchState
-    });
-  </script>
-</body>
-</html>
+    const angleButtons = document.querySelector

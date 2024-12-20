@@ -1,9 +1,20 @@
-const express = require('express');
-const cors = require('cors');
 
+const express = require('express');
 const app = express();
-app.use(cors());
+
 app.use(express.json());
+
+// Manually set CORS headers
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  // If an OPTIONS request, end it quickly
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Initial state
 let state = {
@@ -21,22 +32,24 @@ let state = {
   "-90": false
 };
 
+// Helper for momentary actions
 function activateMomentary(key) {
   state[key] = true;
-  // We'll revert after 2 seconds in the state
   setTimeout(() => {
     state[key] = false;
   }, 2000);
 }
 
+// GET /state: return current state
 app.get('/state', (req, res) => {
   res.json(state);
 });
 
+// POST /update: update state based on request
 app.post('/update', (req, res) => {
   const updates = req.body;
 
-  // Handle exclusive toggles: forward, arm, backwards
+  // Handle mutually exclusive toggles (forward, arm, backwards)
   if ('forward' in updates || 'arm' in updates || 'backwards' in updates) {
     if (updates.forward === true) {
       state.forward = true; state.arm = false; state.backwards = false;
@@ -66,6 +79,7 @@ app.post('/update', (req, res) => {
   res.json({status: "ok"});
 });
 
-app.listen(3000, () => {
-  console.log('Backend running on http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });

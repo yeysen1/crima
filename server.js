@@ -1,85 +1,106 @@
-
 const express = require('express');
+const path = require('path');
+
 const app = express();
 
-app.use(express.json());
-
-// Manually set CORS headers
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  // If an OPTIONS request, end it quickly
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-// Initial state
 let state = {
-  forward: false,
-  backwards: false,
-  arm: false,
-  "1footup": false,
-  "1footdown": false,
-  fire: false,
-  "10": false,
-  "45": false,
-  "90": false,
-  "-10": false,
-  "-45": false,
-  "-90": false
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    '10': false,
+    '45': false,
+    '90': false,
+    '-10': false,
+    '-45': false,
+    '-90': false,
+    fire: false,
+    arm: false,
+    forward: false,
+    backwards: false,
+    '1footup': false,
+    '1footdown': false
 };
 
-// Helper for momentary actions
-function activateMomentary(key) {
-  state[key] = true;
-  setTimeout(() => {
-    state[key] = false;
-  }, 2000);
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+function deactivateExclusiveButtons(except) {
+    if (except !== 'forward') state.forward = false;
+    if (except !== 'backwards') state.backwards = false;
+    if (except !== 'arm') state.arm = false;
 }
 
-// GET /state: return current state
-app.get('/state', (req, res) => {
-  res.json(state);
+function handleMomentaryAction(action) {
+    if (!state[action]) {
+        state[action] = true;
+        setTimeout(() => {
+            state[action] = false;
+        }, 2000);
+    }
+}
+
+app.post('/forward', (req, res) => {
+    if (state.forward) {
+        state.forward = false;
+    } else {
+        deactivateExclusiveButtons('forward');
+        state.forward = true;
+    }
+    res.json(state);
 });
 
-// POST /update: update state based on request
-app.post('/update', (req, res) => {
-  const updates = req.body;
+app.post('/backwards', (req, res) => {
+    if (state.backwards) {
+        state.backwards = false;
+    } else {
+        deactivateExclusiveButtons('backwards');
+        state.backwards = true;
+    }
+    res.json(state);
+});
 
-  // Handle mutually exclusive toggles (forward, arm, backwards)
-  if ('forward' in updates || 'arm' in updates || 'backwards' in updates) {
-    if (updates.forward === true) {
-      state.forward = true; state.arm = false; state.backwards = false;
-    } else if (updates.arm === true) {
-      state.arm = true; state.forward = false; state.backwards = false;
-    } else if (updates.backwards === true) {
-      state.backwards = true; state.forward = false; state.arm = false;
+app.post('/arm', (req, res) => {
+    if (state.arm) {
+        state.arm = false;
+    } else {
+        deactivateExclusiveButtons('arm');
+        state.arm = true;
+    }
+    res.json(state);
+});
+
+app.post('/angle', (req, res) => {
+    const { angle } = req.body;
+    const numAngle = parseInt(angle, 10);
+
+    const validAngles = [10, 45, 90, -10, -45, -90];
+    if (!validAngles.includes(numAngle)) {
+        return res.status(400).json({ error: 'Invalid angle value.' });
     }
 
-    // If explicitly set false, apply it
-    if (updates.forward === false) state.forward = false;
-    if (updates.arm === false) state.arm = false;
-    if (updates.backwards === false) state.backwards = false;
-  }
+    handleMomentaryAction(angle);
+    res.json(state);
+});
 
-  // For all others, treat as momentary
-  for (let key of Object.keys(updates)) {
-    if (!['forward','backwards','arm'].includes(key)) {
-      if (updates[key] === true) {
-        activateMomentary(key);
-      } else if (updates[key] === false) {
-        state[key] = false;
-      }
-    }
-  }
+app.post('/fire', (req, res) => {
+    handleMomentaryAction('fire');
+    res.json(state);
+});
 
-  res.json({status: "ok"});
+app.post('/1footup', (req, res) => {
+    handleMomentaryAction('1footup');
+    res.json(state);
+});
+
+app.post('/1footdown', (req, res) => {
+    handleMomentaryAction('1footdown');
+    res.json(state);
+});
+
+app.get('/state', (req, res) => {
+    res.json(state);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
